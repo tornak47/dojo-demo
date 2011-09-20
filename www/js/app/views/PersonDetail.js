@@ -1,13 +1,14 @@
-dojo.provide('app.views.Person');
-
+dojo.provide('app.views.PersonDetail');
+dojo.require("dojo.cache");
 dojo.require('dijit._Widget');
 dojo.require('dijit._Templated');
 
-dojo.declare('app.views.Person', [ dijit._Widget, dijit._Templated ], {
-  templateString : dojo.cache('app.views', 'Person/Person.html'),
+dojo.declare('app.views.PersonDetail', [ dijit._Widget, dijit._Templated ], {
+    
+  templateString : dojo.cache('app.views', 'Person/PersonDetail.html'),
   tweetTemplate : dojo.cache('app.views', 'Person/Tweet.html'),
   weatherTemplate : dojo.cache('app.views', 'Person/Weather.html'),
-
+ 
   postMixInProperties : function() {
     this.isFavorite = this.person.isFavorite();
     this.favoriteText = this.isFavorite ? 'unfavorite' : 'favorite';
@@ -71,3 +72,6 @@ dojo.declare('app.views.Person', [ dijit._Widget, dijit._Templated ], {
     );
   }
 });
+app.views.PersonDetail.fromViewModel = function(model) {
+    return new app.views.PersonDetail({placeHolder:'detail',person:model.person});
+};

@@ -61,7 +61,7 @@ dojo.declare('dbp.Router', null, {
 
 
     d.forEach(userRoutes, function(r) {
-      this._registerRoute(r.path, r.handler, r.defaultRoute);
+      this._registerRoute(r.name||'',r.path,r.defaults||{}, r.handler, r.defaultRoute);
     }, this);
 
     // use the first route as the default if one
@@ -71,13 +71,23 @@ dojo.declare('dbp.Router', null, {
     }
 
   },
-
+    getPath: function(route) {
+        var path = route.path;
+        
+        for (var i = 0; i < route.paramNames.length; i++) {
+            var paramName = route.paramNames[i];
+            path = path.replace(':' +paramName,route.defaults[paramName]);
+        }
+        
+        return path;
+    },
   /**
    * Initialization method; looks at current hash and handles,
    * else uses default route to get started
    */
   init : function() {
-    this.go(window.location.hash || this.defaultRoute.path);
+      
+    this.go(window.location.hash || this.getPath(this.defaultRoute));
 
     if (hasHistoryState) {
       connections.push(d.connect(window, "onpopstate", this, function() {
@@ -126,12 +136,16 @@ dojo.declare('dbp.Router', null, {
 
         params = this._parseParams(path, route);
 
-    route = d.mixin(route, {
+    route = d.mixin({},route, {
       hash : hash,
       params : params
     });
-
-    route.handler(params, route);
+    dbp.chain.ChainService.trigger({
+        type: 'route',
+        args: params,
+        route: route
+    },new dbp.Router.RouteAction({args:params,route:route}));
+    //route.handler(params, route);
   },
 
   /**
@@ -159,12 +173,14 @@ dojo.declare('dbp.Router', null, {
    * @param {Boolean} defaultRoute Whether the route should be used as
    *                    the default route.
    */
-  _registerRoute : function(path, fn, defaultRoute) {
+  _registerRoute : function(name, path,defaults,  fn, defaultRoute) {
     var r = {
           path : path,
           handler : fn,
           matcher : this._convertPathToMatcher(path),
-          paramNames : this._getParamNames(path)
+          paramNames : this._getParamNames(path),
+          defaults: defaults,
+          name:name
         };
 
     routes.push(r);
@@ -208,7 +224,7 @@ dojo.declare('dbp.Router', null, {
         pathParams,
         _decode = decodeURIComponent;
 
-    params = query ? d.mixin({}, d.queryToObject(query)) : {};
+    params = query ? d.mixin({},route.defaults||{}, d.queryToObject(query)) : {};
 
     if ((pathParams = route.matcher.exec(this._getRouteablePath(path))) !== null) {
       // first match is the full path
@@ -273,6 +289,7 @@ dojo.declare('dbp.Router', null, {
     routes = [];
   }
 });
-
+dojo.require("dbp.chain");
+dojo.declare("dbp.Router.RouteAction",[dbp.chain.ChainLink],{});
 }(dojo));
 

@@ -1,48 +1,11 @@
 dojo.provide('app.base');
-/**
- * This file is your application's base JavaScript file;
- * it is loaded into the page by the dojo.require() call in
- * index.html. You can write code in this file, use it to
- * express dependencies on other files, or both. Generally,
- * this file should be used only for bootstrapping code;
- * actual functionality should be placed in other files inside
- * the www/js/app directory.
- */
-
-/**
- * You can specify dependencies on other files by adding
- * dojo.require() statements for them:
- *
- *    dojo.require('dijit.Dialog');
- *
- * This works for your application's files, too:
- *
- *    dojo.require('app.Foo');
- *
- * The above would look for a file located at
- * www/js/app/Foo.js; however, it's important to note
- * that this only works because we've specified a modulePath for
- * the 'app' namespace in index.html. If we do not specify a
- * modulePath for a namespace, dojo.require will assume that the
- * namespace corresponds to a directory that is a sibling of
- * the directory that contains dojo.js. The modulePath setting
- * in index.html overrides that default, providing a location
- * for the namespace relative to the location of dojo.js.
- *
- * Note also that any files you include via dojo.require()
- * MUST include a call to dojo.provide at the beginning;
- * the dojo.provide() function should be passed a string
- * that specifies how you expect the module to be referred
- * to in dojo.require() calls:
- *
- *    dojo.provide('app.Foo');
- *
- * Finally, note that you do not need to express all of your
- * application's dependencies in this one file; individual files
- * can express their own dependencies as well.
- */
-
+dojo.require('dojo.html');
+dojo.require('dojox.dtl');
+dojo.require('app.views.PersonDetail');
+dojo.require('dbp.ViewModel');
 dojo.require('dbp.Router');
+dojo.require('dbp.ViewModel');
+dojo.require('dbp.behaviour');
 dojo.require('app.controllers.People');
 dojo.require('app.services.Favorites');
 
@@ -52,20 +15,63 @@ dojo.require('app.services.Favorites');
  * making a single-page app, this is your application controller.
  */
 dojo.ready(function() {
+    dojo.declare("dbp.InvokeAction",[dbp.chain.ChainLink],{});
+  // Set up routre
   var router = new dbp.Router([
     {
-      path : "/user/:id",
-      handler : function(params) {
-        app.controllers.People.set('personId', params.id);
-      }
-    },
-
-    {
-      path : "/",
-      handler : function() {},
+      path : "/:controller/:action",
+      defaults: {controller:"People",module:"",action:"index" },
+      name : 'myRoute',
       defaultRoute : true
     }
   ]);
-
-  app.controllers.People.init().then(dojo.hitch(router, 'init'));
+  // When ViewModel, get View
+  // When View, place on page
+  dbp.behaviour.whenModelIs(dbp.ViewModel)
+    .then(function(c,m) {
+        
+        // Find View
+        var viewName = m.declaredClass;
+        viewName = viewName.substring(viewName.lastIndexOf(".")+1);
+        viewName = viewName.replace('ViewModel','');
+        console.log(viewName);
+        var view = app.views[viewName];
+            var v = view.fromViewModel(m);
+            window.view = v;
+            return v;
+  });
+  
+    dbp.behaviour.whenModelIs(app.views.PersonDetail).then(function(c,m) {
+        m.person.getTweets().then(dojo.hitch(m, 'set', 'tweets'));
+        //m.person.getWeather().then(dojo.hitch(m, 'set', 'weatherData'));
+        
+    });
+  dbp.behaviour.whenModelIs(dijit._Widget)
+    .then(function(c,m) {
+        
+        m.placeAt(m.placeHolder);
+  });
+  /*dbp.behaviour.whenModelIs(app.viewmodels.PersonDetailViewModel).then(function(c,m) {
+            return new app.views.Person({
+                person: m.person
+            });
+  });
+*/
+  dbp.behaviour.whenModelIs(dbp.InvokeAction).then(function(c,m) {
+        return m.controller[m.action].call(m.controller,m.params);
+  });
+  dbp.behaviour.whenModelIs(dbp.Router.RouteAction).then(function(c,m) {
+      var controllerName = m.route.params.controller;
+        var actionName = m.route.params.action;
+        var controller = app.controllers[controllerName];
+        return new dbp.InvokeAction({
+            controller:controller,
+            action:actionName, 
+            params: m.args 
+        });
+  });
+  
+  router.init();
+  //.then(dojo.hitch(router, 'init'));
 });
+    

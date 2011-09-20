@@ -1,1 +1,5 @@
-<ul class="people"></ul>
+<ul class="people">
+{% for person in people %}
+<li><a href="#/People/detail">{{ person.data.name }}</a></li>
+{% endfor %}
+</ul>

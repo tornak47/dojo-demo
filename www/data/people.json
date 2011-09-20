@@ -29,5 +29,13 @@
     "twitter" : "rmurphey",
     "location" : "Durham, NC",
     "img" : "img/rebecca.png"
+  },
+
+  {
+    "id" : 5,
+    "name" : "Matthew Zalewski",
+    "twitter" : "tornak47_test",
+    "location" : "Napier, NZ",
+    "img" : "img/rebecca.png"
   }
 ]

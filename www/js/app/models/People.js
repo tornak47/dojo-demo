@@ -7,7 +7,7 @@ dojo.require('app.models.Person');
 
 var store;
 
-app.models.People = {
+dojo.declare('app.models.People', [], {
   load : function() {
     if (store) { return store.data; }
 
@@ -29,6 +29,6 @@ app.models.People = {
       return new app.models.Person(p);
     });
   }
-};
+});
 
 }());
